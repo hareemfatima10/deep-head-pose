@@ -18,12 +18,13 @@ import pickle
 import os
 
 import datasets, hopenet, utils
+from torchvision.models.vision_transformer import ImageClassification
 from mtcnn import MTCNN
 import cv2
 
 
 def head_pose(input):
-    snapshot_path='dhp/hopenet_robust_alpha1.pkl'
+    snapshot_path='/content/hopenet_robust_alpha1.pkl'
     cudnn.enabled = True
     gpu = 0
     # ResNet50 structure
@@ -51,9 +52,8 @@ def head_pose(input):
     roll_error = .0
 
     l1loss = torch.nn.L1Loss(size_average=False)
-    image_pose = {}
+    image_pose = []
     image_np_arr = []
-    index = 0
     img_list = input
     for img_np in img_list:
         img = Image.fromarray(img_np)
@@ -82,22 +82,22 @@ def head_pose(input):
         yaw = -yaw_predicted[0] 
         roll = roll_predicted[0] 
         #save to dict
-        image_pose[index] = {'pitch': pitch, 'yaw': yaw, 'roll':roll}
-        image_np_arr[index] = img_np
-        index +=1
+        image_pose.append((pitch,yaw,roll))
+        #image_pose[index] = {'pitch': pitch, 'yaw': yaw, 'roll':roll}
+        image_np_arr.append(img_np)
     return image_pose, image_np_arr
 
 def find_similar(image_coords_, avatar_coords_):
-
     dissimilarity = {}
+    similar_pose =[]
     for i in image_coords_:
         for a in avatar_coords_:
-            x = image_coords_[i].get('pitch')
-            y = image_coords_[i].get('yaw')
-            z = image_coords_[i].get('roll')
-            x_fake = avatar_coords_[a].get('pitch')
-            y_fake = avatar_coords_[a].get('yaw')
-            z_fake = avatar_coords_[a].get('roll')
+            x = i[0]
+            y = i[1]
+            z = i[2]
+            x_fake = a[0]
+            y_fake = a[1]
+            z_fake = a[2]
             
             real = np.array([x,y,z])
             fake = np.array([x_fake, y_fake, z_fake])
@@ -105,18 +105,15 @@ def find_similar(image_coords_, avatar_coords_):
             
         key_min = min(dissimilarity.keys(), key=(lambda k: dissimilarity[k]))
         #return index of images with max similarity
-        original_image = i
-        avatar_image = key_min
-    return original_image, avatar_image
+        similar_pose.append((image_coords_.index(i),avatar_coords_.index(key_min)))
+    return similar_pose
 
 def match_head_pose(image_np, avatar_np):
+    images = []
     image_coords, image_np_arr = head_pose(image_np)
     avatar_coords, avatar_np_arr = head_pose(avatar_np)
-
-    matching_original_image, matching_avatar_image = find_similar(image_coords, avatar_coords)
-
-    #get np_array of the matching images
-    original_image = image_np_arr[matching_original_image]
-    avatar_image = avatar_np_arr[matching_avatar_image]
+    similar_pose = find_similar(image_coords, avatar_coords)
+    for i in similar_pose:
+      images.append((image_np_arr[i[0]],avatar_np_arr[i[1]]))
     
-    return original_image, avatar_image
+    return images
