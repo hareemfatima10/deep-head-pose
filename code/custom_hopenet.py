@@ -22,7 +22,8 @@ from mtcnn import MTCNN
 import cv2
 
 
-def head_pose(input, snapshot_path='dhp/hopenet_robust_alpha1.pkl'):
+def head_pose(input):
+    snapshot_path='dhp/hopenet_robust_alpha1.pkl'
     cudnn.enabled = True
     gpu = 0
     # ResNet50 structure
@@ -50,11 +51,12 @@ def head_pose(input, snapshot_path='dhp/hopenet_robust_alpha1.pkl'):
     roll_error = .0
 
     l1loss = torch.nn.L1Loss(size_average=False)
-    image_coords = {}
-    img_list = [input]
-    for cv2_img in img_list:
-        cv2_img=cv2.resize(cv2_img,(224,224))[:,:,::-1]
-        cv2_img = cv2_img.astype(np.uint8).copy() 
+    image_pose = {}
+    image_np_arr = []
+    index = 0
+    img_list = input
+    for img_np in img_list:
+        img = Image.fromarray(img_np)
         img = transformations(img)
         img=img.unsqueeze(0)
         
@@ -80,10 +82,13 @@ def head_pose(input, snapshot_path='dhp/hopenet_robust_alpha1.pkl'):
         yaw = -yaw_predicted[0] 
         roll = roll_predicted[0] 
         #save to dict
-        image_coords[cv2_img] = {'pitch': pitch, 'yaw': yaw, 'roll':roll}
-    return image_coords
+        image_pose[index] = {'pitch': pitch, 'yaw': yaw, 'roll':roll}
+        image_np_arr[index] = img_np
+        index +=1
+    return image_pose, image_np_arr
 
 def find_similar(image_coords_, avatar_coords_):
+
     dissimilarity = {}
     for i in image_coords_:
         for a in avatar_coords_:
@@ -99,7 +104,19 @@ def find_similar(image_coords_, avatar_coords_):
             dissimilarity[a] = np.linalg.norm((real-fake)*2)
             
         key_min = min(dissimilarity.keys(), key=(lambda k: dissimilarity[k]))
-        #image with max similarity
-        original_image = cv2.imread(i)
-        avatar_image = cv2.imread(key_min)
+        #return index of images with max similarity
+        original_image = i
+        avatar_image = key_min
+    return original_image, avatar_image
+
+def match_head_pose(image_np, avatar_np):
+    image_coords, image_np_arr = head_pose(image_np)
+    avatar_coords, avatar_np_arr = head_pose(avatar_np)
+
+    matching_original_image, matching_avatar_image = find_similar(image_coords, avatar_coords)
+
+    #get np_array of the matching images
+    original_image = image_np_arr[matching_original_image]
+    avatar_image = avatar_np_arr[matching_avatar_image]
+    
     return original_image, avatar_image
