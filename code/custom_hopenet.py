@@ -17,9 +17,7 @@ import glob
 import pickle
 import os
 
-import HeadPose.code.datasets
-import HeadPose.code.hopenet
-import HeadPose.code.utils
+import datasets, hopenet, utils
 from mtcnn import MTCNN
 import cv2
 
