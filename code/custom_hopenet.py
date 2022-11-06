@@ -16,14 +16,14 @@ import torch.nn.functional as F
 import glob
 import pickle
 import os
-import utils
+import DHP.code.utils as utils, DHP.code.hopenet as hopenet
 #from torchvision.models.vision_transformer import ImageClassification
 from mtcnn import MTCNN
 import cv2
 
 
 def head_pose(input):
-    snapshot_path='/content/hopenet_robust_alpha1.pkl'
+    snapshot_path='/content/DHP/hopenet_robust_alpha1.pkl'
     cudnn.enabled = True
     gpu = 0
     # ResNet50 structure
