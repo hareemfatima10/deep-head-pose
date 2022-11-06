@@ -16,9 +16,8 @@ import torch.nn.functional as F
 import glob
 import pickle
 import os
-
-import datasets, hopenet, utils
-from torchvision.models.vision_transformer import ImageClassification
+import utils
+#from torchvision.models.vision_transformer import ImageClassification
 from mtcnn import MTCNN
 import cv2
 
