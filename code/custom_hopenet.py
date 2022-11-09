@@ -113,6 +113,6 @@ def match_head_pose(image_np, avatar_np):
     avatar_coords, avatar_np_arr = head_pose(avatar_np)
     similar_pose = find_similar(image_coords, avatar_coords)
     for i in similar_pose:
-      images.append((image_np_arr[i[0]],avatar_np_arr[i[1]]))
+      images.append((image_np_arr[i[0]][:, :, ::-1],avatar_np_arr[i[1]][:, :, ::-1]))
     
     return images
